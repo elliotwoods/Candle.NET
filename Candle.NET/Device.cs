@@ -102,7 +102,7 @@ namespace Candle
 			}
 			for(byte i=0; i<channelCount; i++)
 			{
-				//this.FChannels.Add(new Channel(this.FDeviceHandle, i));
+				this.FChannels.Add(new Channel(this.FDeviceHandle, i));
 			}
 		}
 

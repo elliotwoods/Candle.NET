@@ -22,6 +22,7 @@ namespace Candle
 				channel.Send(frame);
 				Console.Write(".");
 			}
+			
 			Console.WriteLine("");
 		}
 

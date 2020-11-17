@@ -99,7 +99,7 @@ namespace MirrorNativeApp
 					Console.Write("ERR, ");
 				}
 
-				Console.WriteLine("ID : {0}, DLC : {1}, Data : {2:X},{3:X},{4:X},{5:X},{6:X},{7:X},{8:X},{9:X}, Time : {9}"
+				Console.WriteLine("ID : {0}, DLC : {1}, Data : {2:X},{3:X},{4:X},{5:X},{6:X},{7:X},{8:X},{9:X}, Time : {10}"
 					, id
 					, frame.can_dlc
 					, frame.data[0]
@@ -131,7 +131,7 @@ namespace MirrorNativeApp
 			else
 			{
 				Console.WriteLine("Capabilities: ");
-				Console.WriteLine("\t feature: {0}", capabilities.feature);
+				Console.WriteLine("\t features: {0}", capabilities.feature);
 				Console.WriteLine("\t fclk_can: {0}", capabilities.fclk_can);
 				Console.WriteLine("\t tseg1_min: {0}", capabilities.tseg1_min);
 				Console.WriteLine("\t tseg1_max: {0}", capabilities.tseg1_max);
@@ -148,7 +148,7 @@ namespace MirrorNativeApp
 				Console.WriteLine("Failed to set bit rate");
 			}
 
-			if (!NativeFunctions.candle_channel_start(device, channel, 0))
+			if (!NativeFunctions.candle_channel_start(device, channel, NativeFunctions.candle_mode_t.CANDLE_MODE_NORMAL))
 			{
 				Console.WriteLine("Failed to start channel");
 			}

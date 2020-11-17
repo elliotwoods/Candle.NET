@@ -30,7 +30,7 @@ namespace Candle
 		}
 
 		[Flags]
-		public enum candle_mode_t
+		public enum candle_mode_t : UInt32
 		{
 			CANDLE_MODE_NORMAL = 0x00,
 			CANDLE_MODE_LISTEN_ONLY = 0x01,
@@ -93,7 +93,7 @@ namespace Candle
 		[StructLayout(LayoutKind.Sequential)]
 		public struct candle_capability_t
 		{
-			public UInt32 feature;
+			public candle_mode_t feature;
 			public UInt32 fclk_can;
 			public UInt32 tseg1_min;
 			public UInt32 tseg1_max;
@@ -176,7 +176,7 @@ namespace Candle
 
 		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		[return: MarshalAs(UnmanagedType.I1)]
-		public extern static bool candle_channel_start(IntPtr device, byte channel, UInt32 flags);
+		public extern static bool candle_channel_start(IntPtr device, byte channel, candle_mode_t flags);
 
 		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		[return: MarshalAs(UnmanagedType.I1)]
@@ -196,7 +196,6 @@ namespace Candle
 
 
 		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
-		[return: MarshalAs(UnmanagedType.I1)]
 		public extern static candle_err_t candle_dev_last_error(IntPtr device);
 
 
