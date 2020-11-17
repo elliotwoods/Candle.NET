@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candle.NET", "Candle.NET\Ca
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MirrorNativeApp", "TestApp\MirrorNativeApp\MirrorNativeApp.csproj", "{745404E0-59DE-420A-AF4C-EFF53251B761}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApp", "TestApp\OOApp\TestApp.csproj", "{C2E6D347-DEDF-4CF0-B254-DEC9638F3B48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleTest", "TestApp\OOApp\SimpleTest.csproj", "{C2E6D347-DEDF-4CF0-B254-DEC9638F3B48}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Candle", "Candle\Candle.vcxproj", "{7979386C-6095-41EC-98BA-10DB979A384D}"
 EndProject

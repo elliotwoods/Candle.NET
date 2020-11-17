@@ -1,6 +1,10 @@
 # Candle.NET
 .NET wrapper for the Candle API for controlling CAN bus gateways/analysers using the candlelight firmware (e.g. CANable, CANtact, etc)
 
+## Instructions
+
+* You need to copy the native `candle.dll` from `bin\$(Platform)\$(Configuration)\candle.dll` to your project's target folder so that it can be found by `DllImport`.
+
 ## Notes for general use
 
 * We wrap a modified version of the CandleAPIDriver found in the [Cangaroo repo](https://github.com/HubertD/cangaroo/tree/master/src/driver/CandleApiDriver/api). 
