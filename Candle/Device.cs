@@ -44,7 +44,7 @@ namespace Candle
 		}
 
 		IntPtr FDeviceHandle;
-		List<Channel> FChannels;
+		List<Channel> FChannels = new List<Channel>();
 
 		public Device(IntPtr deviceHandle)
 		{
@@ -84,6 +84,10 @@ namespace Candle
 				NativeFunctions.throwError(this.FDeviceHandle);
 			}
 
+			uint timestamp;
+			NativeFunctions.candle_dev_get_timestamp_us(this.FDeviceHandle, out timestamp);
+			Console.WriteLine(timestamp);
+
 			// List Channels
 			this.FChannels.Clear();
 			byte channelCount;
@@ -91,10 +95,9 @@ namespace Candle
 			{
 				NativeFunctions.throwError(this.FDeviceHandle);
 			}
-
 			for(byte i=0; i<channelCount; i++)
 			{
-				this.FChannels.Add(new Channel(this.FDeviceHandle, i));
+				//this.FChannels.Add(new Channel(this.FDeviceHandle, i));
 			}
 		}
 

@@ -183,5 +183,23 @@ namespace Candle
 			var error = candle_dev_last_error(device);
 			throw (new Exception(error.ToString()));
 		}
+
+		public static candle_bittiming_t getDefaultBitTiming()
+		{
+			NativeFunctions.candle_bittiming_t bitTiming;
+			{
+				bitTiming.brp = 875;
+				bitTiming.phase_seg1 = 12;
+				bitTiming.phase_seg2 = 2;
+				bitTiming.sjw = 1;
+				bitTiming.prop_seg = 1;
+			}
+			return bitTiming;
+		}
+
+		public static UInt32 getDefaultBitRate()
+		{
+			return 500000;
+		}
 	}
 }

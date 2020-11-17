@@ -6,11 +6,48 @@
 #include <chrono>
 #include "candle.h"
 
+template<typename T>
+T& valueAndMove(uint8_t*& data)
+{
+	auto& reference = *(T*)(data);
+	data += sizeof(T);
+	return reference;
+}
+
+void sendMovementFrame(candle_handle device, uint8_t channel, int32_t position)
+{
+	candle_frame_t frame;
+	{
+		frame.can_id = 22 << 19 | CANDLE_ID_EXTENDED;
+		frame.can_dlc = 7;
+		frame.flags = 0;
+		frame.data[0] = 1;
+		frame.data[1] = 1;
+		frame.data[2] = 0;
+		frame.data[3] = 1;
+		frame.data[4] = 0;
+		frame.data[5] = 0;
+		frame.data[6] = 0;
+		frame.data[7] = 0;
+	}
+
+	// Send a TargetPosition frame (for Muscle Memory example)
+	auto data = frame.data;
+	valueAndMove<uint8_t>(data) = 1;
+	valueAndMove<uint16_t>(data) = 12;
+	valueAndMove<uint32_t>(data) = position;
+
+	if (!candle_frame_send(device, channel, &frame)) {
+		std::cerr << "Failed to send CAN frame" << std::endl;
+	}
+}
+
+
 void sendFrames(candle_handle device, uint8_t channel)
 {
 	candle_frame_t frame;
 	{
-		frame.can_id = 1 << 19 | CANDLE_ID_EXTENDED;
+		frame.can_id = 22 << 19 | CANDLE_ID_EXTENDED;
 		frame.can_dlc = 7;
 		frame.flags = 0;
 		frame.data[0] = 1;
@@ -24,11 +61,21 @@ void sendFrames(candle_handle device, uint8_t channel)
 	}
 
 
-	std::cout << "Sending : " << std::endl;
+	std::cout << "Sending init : " << std::endl;
+	if (!candle_frame_send(device, channel, &frame)) {
+		std::cerr << "Failed to send CAN frame" << std::endl;
+	}
+
+
+
+	std::cout << "Sending moves : " << std::endl;
 	for (int i = 0; i < 100; i++) {
-		if (!candle_frame_send(device, channel, &frame)) {
-			std::cerr << "Failed to send CAN frame" << std::endl;
-		}
+		sendMovementFrame(device, channel, i);
+		std::cout << ".";
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+	for (int i = 100; i >= 0; i--) {
+		sendMovementFrame(device, channel, i);
 		std::cout << ".";
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
