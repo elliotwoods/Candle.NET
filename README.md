@@ -21,13 +21,20 @@ void run() {
     device.Open();
     foraech(var channel in device.Channels) {
       channel.start();
-			channel.Start(500000);
+      channel.Start(500000);
       
+      // Send frames
       var frame = new Frame();
       frame.ID = 1;
       frame.Extended = true;
       frame.data = new byte[7] { 1, 1, 0, 1, 0, 0 0 };
       channel.Send(frame);
+      
+      // Receive frames
+      var receivedFrames = channel.Receive();
+      foreach(var frame in receivedFrames) {
+      	Console.WriteLine(frame);
+      }
 
       channel.stop();
     }
