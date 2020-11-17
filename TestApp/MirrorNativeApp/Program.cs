@@ -80,6 +80,27 @@ namespace MirrorNativeApp
 				Thread.Sleep(1);
 			}
 
+			// Send a registry request
+			{
+				frame.data = new byte[]
+				{
+					0,
+					1,
+					0,
+					
+					0,
+					0,
+					0,
+					0,
+					0,
+				};
+				frame.can_dlc = 3;
+				if (!NativeFunctions.candle_frame_send(device, channel, ref frame))
+				{
+					Console.Write("Failed to send CAN frame");
+				}
+			}
+
 			Console.WriteLine("Receiving all : ");
 			int count = 0;
 			while (NativeFunctions.candle_frame_read(device, out frame, 100))

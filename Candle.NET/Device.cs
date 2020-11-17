@@ -268,12 +268,15 @@ namespace Candle
 								var frame = new Frame();
 
 								var flags = (NativeFunctions.candle_id_flags)(nativeFrame.can_id);
+								frame.Identifier = nativeFrame.can_id & ((1 << 29) - 1);
 								frame.Extended = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED);
 								frame.RTR = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_RTR);
 								frame.Error = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_ERR);
 
 								frame.Data = new byte[nativeFrame.can_dlc];
 								Buffer.BlockCopy(nativeFrame.data, 0, frame.Data, 0, nativeFrame.can_dlc);
+
+								frame.Timestamp = nativeFrame.timestamp_us;
 
 								this.FChannels[nativeFrame.channel].NotifyReceive(frame);
 							}

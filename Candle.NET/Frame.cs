@@ -7,7 +7,7 @@ namespace Candle
 {
 	public class Frame
 	{
-		public UInt32 ID;
+		public UInt32 Identifier;
 		public byte[] Data;
 		public UInt32 Timestamp;
 		public bool Extended;
@@ -17,7 +17,7 @@ namespace Candle
 		public override string ToString()
 		{
 			var value = String.Format("ID : {0}, Data : {1}, Time : {2}us"
-				, this.ID
+				, this.Identifier
 				, BitConverter.ToString(this.Data)
 				, this.Timestamp
 			);

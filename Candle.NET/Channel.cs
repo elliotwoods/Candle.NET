@@ -58,7 +58,6 @@ namespace Candle
 		public void Start(UInt32 bitRate)
 		{
 			this.SetBitrate(bitRate);
-
 			this.FDevice.PerformBlocking(() =>
 			{
 				if (!NativeFunctions.candle_channel_start(this.FDevice.Handle, this.FChannelIndex, 0))
@@ -82,7 +81,7 @@ namespace Candle
 		public void Send(Frame frame)
 		{
 			var nativeFrame = new NativeFunctions.candle_frame_t();
-			nativeFrame.can_id = frame.ID;
+			nativeFrame.can_id = frame.Identifier;
 			if(frame.Extended)
 			{
 				nativeFrame.can_id |= (UInt32) NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED;

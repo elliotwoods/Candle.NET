@@ -20,9 +20,9 @@ namespace TestApp
 					// Send frame
 					{
 						var frame = new Frame();
-						frame.ID = 1;
+						frame.Identifier = 1 << 19;
 						frame.Extended = true;
-						frame.Data = new byte[7] { 1, 1, 0, 1, 0, 0, 0 };
+						frame.Data = new byte[3] { 0, 0, 0};
 						channel.Send(frame);
 					}
 
