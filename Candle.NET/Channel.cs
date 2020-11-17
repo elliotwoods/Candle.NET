@@ -44,20 +44,20 @@ namespace Candle
 			});
 		}
 
-		public void SetBitrate(UInt32 value)
+		public void SetBitrate(int value)
 		{
 			this.FDevice.PerformBlocking(() =>
 			{
-				if (!NativeFunctions.candle_channel_set_bitrate(this.FDevice.Handle, this.FChannelIndex, value))
+				if (!NativeFunctions.candle_channel_set_bitrate(this.FDevice.Handle, this.FChannelIndex, (UInt32) value))
 				{
 					NativeFunctions.throwError(this.FDevice.Handle);
 				}
 			});
 		}
 
-		public void Start(UInt32 bitRate)
+		public void Start(int bitrate)
 		{
-			this.SetBitrate(bitRate);
+			this.SetBitrate(bitrate);
 			this.FDevice.PerformBlocking(() =>
 			{
 				if (!NativeFunctions.candle_channel_start(this.FDevice.Handle, this.FChannelIndex, 0))
