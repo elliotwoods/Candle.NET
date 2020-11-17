@@ -52,6 +52,13 @@ namespace Candle
 		Thread FThread = null;
 		bool FIsClosing = false;
 
+		DateTime FCounterLastTime;
+		UInt64 FCounterRxBits = 0;
+		UInt64 FCounterTxBits = 0;
+
+		int FRxBitsPerSecond = 0;
+		int FTxBitsPerSecond = 0;
+
 		public Device(IntPtr deviceHandle)
 		{
 			this.FDeviceHandle = deviceHandle;
@@ -61,6 +68,25 @@ namespace Candle
 		{
 			this.Close();
 			NativeFunctions.candle_dev_free(this.FDeviceHandle);
+		}
+
+		void CallInRightThread(Action action, bool blocking)
+		{
+			if(!this.IsOpen || Thread.CurrentThread == this.FThread)
+			{
+				action();
+			}
+			else
+			{
+				if(blocking)
+				{
+					this.PerformBlocking(action);
+				}
+				else
+				{
+					this.Perform(action);
+				}
+			}
 		}
 
 		public NativeFunctions.candle_devstate_t State
@@ -76,14 +102,7 @@ namespace Candle
 					}
 				};
 
-				if (this.IsOpen)
-				{
-					this.PerformBlocking(action);
-				}
-				else
-				{
-					action();
-				}
+				this.CallInRightThread(action, true);
 				return value;
 			}
 		}
@@ -100,16 +119,7 @@ namespace Candle
 						throw (new Exception("Failed to get path"));
 					}
 				};
-
-				if(this.IsOpen)
-				{
-					this.PerformBlocking(action);
-				}
-				else
-				{
-					action();
-				}
-				
+				this.CallInRightThread(action, true);
 				return path.ToString();
 			}
 		}
@@ -126,16 +136,7 @@ namespace Candle
 						NativeFunctions.throwError(this.FDeviceHandle);
 					}
 				};
-
-				if (this.IsOpen)
-				{
-					this.PerformBlocking(action);
-				}
-				else
-				{
-					action();
-				}
-
+				this.CallInRightThread(action, true);
 				return value;
 			}
 		}
@@ -170,6 +171,10 @@ namespace Candle
 			{
 				this.FChannels.Add(i, new Channel(this, i));
 			}
+
+			this.FCounterLastTime = DateTime.Now;
+			this.FCounterRxBits = 0;
+			this.FCounterTxBits = 0;
 		}
 
 		public void Close()
@@ -196,6 +201,19 @@ namespace Candle
 				this.FThread.Join();
 				this.FThread = null;
 			}
+		}
+
+		public void Update()
+		{
+			var now = DateTime.Now;
+			var timeDelta = now - this.FCounterLastTime;
+
+			this.FRxBitsPerSecond = (int)(this.FCounterRxBits * 1000 / (UInt64)timeDelta.TotalMilliseconds);
+			this.FTxBitsPerSecond = (int)(this.FCounterTxBits * 1000 / (UInt64)timeDelta.TotalMilliseconds);
+
+			this.FCounterLastTime = now;
+			this.FCounterRxBits = 0;
+			this.FCounterTxBits = 0;
 		}
 
 		public bool IsOpen
@@ -323,6 +341,30 @@ namespace Candle
 				}
 			}
 			return result;
+		}
+
+		public int TxQueueSize
+		{
+			get
+			{
+				return this.FActionQueue.Count;
+			}
+		}
+
+		public int RxBitsPerSecond
+		{
+			get
+			{
+				return this.FRxBitsPerSecond;
+			}
+		}
+
+		public int TxBitsPerSecond
+		{
+			get
+			{
+				return this.TxBitsPerSecond;
+			}
 		}
 	}
 }

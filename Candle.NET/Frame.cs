@@ -37,5 +37,21 @@ namespace Candle
 
 			return value;
 		}
+
+		// From https://en.wikipedia.org/wiki/CAN_bus#Frames
+		public int LengthOnBus
+		{
+			get
+			{
+				if(!this.Extended)
+				{
+					return 1 + 11 + 1 + 2 + 4 + 8 + 15 + 1 + 2 + 7 + 3;
+				}
+				else
+				{
+					return 1 + 11 + 1 + 1 + 18 + 1 + 2 + 4 + (this.Data.Length * 8) + 15 + 1 + 1 + 1 + 7;
+				}
+			}
+		}
 	}
 }
