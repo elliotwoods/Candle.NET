@@ -7,7 +7,11 @@
 * This is only tested on Windows (10 64bit). And since the underlying driver uses WinUSB, it is unlikely to work on other platforms
 
 ## Notes if you work directly with `NativeFunctions`
+
+I strongly recommend that you work with `Device` and `Channel` classes rather than with the `NativeFunctions`. So these notes are mostly for me:
+
 * You must periodically call `candle_frame_read` between your `candle_frame_send`s (e.g. if I perform 94 sends in a row then they start to fail, but no error is reported)
+* I had issues with the device path being returned as a `wchar_t*` so instead we pass in a pre-allocated `StringBuffer` into an argument.
 
 # Documentation
 
