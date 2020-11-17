@@ -38,6 +38,12 @@ void run() {
 
       channel.stop();
     }
+    
+    var errors = device.ReceiveErrors();
+    foreach(var error in errors) {
+      Console.WriteLine(error);
+    }
   }
+}
 
 ```
