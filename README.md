@@ -13,7 +13,7 @@ I strongly recommend that you work with `Device` and `Channel` classes rather th
 * You must periodically call `candle_frame_read` between your `candle_frame_send`s (e.g. if I perform 94 sends in a row then they start to fail, but no error is reported)
 * I had issues with the device path being returned as a `wchar_t*` so instead we pass in a pre-allocated `StringBuffer` into an argument.
 
-# Documentation
+# Example
 
 Example apps can be found in the `TestApp` folder.
 
