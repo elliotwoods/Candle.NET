@@ -130,37 +130,40 @@ typedef struct {
 #define DLL
 #define DLL_EXPORT __declspec( dllexport )
 
-DLL_EXPORT bool __stdcall DLL candle_list_scan(candle_list_handle *list);
-DLL_EXPORT bool __stdcall DLL candle_list_free(candle_list_handle list);
-DLL_EXPORT bool __stdcall DLL candle_list_length(candle_list_handle list, uint8_t *len);
+//#define CALL_TYPE __stdcall
+#define CALL_TYPE __cdecl
 
-DLL_EXPORT bool __stdcall DLL candle_dev_get(candle_list_handle list, uint8_t dev_num, candle_handle *hdev);
-DLL_EXPORT bool __stdcall DLL candle_dev_get_state(candle_handle hdev, candle_devstate_t *state);
-DLL_EXPORT wchar_t * __stdcall DLL candle_dev_get_path(candle_handle hdev);
-DLL_EXPORT bool __stdcall DLL candle_dev_open(candle_handle hdev);
-DLL_EXPORT bool __stdcall DLL candle_dev_get_timestamp_us(candle_handle hdev, uint32_t *timestamp_us);
-DLL_EXPORT bool __stdcall DLL candle_dev_close(candle_handle hdev);
-DLL_EXPORT bool __stdcall DLL candle_dev_free(candle_handle hdev);
+DLL_EXPORT bool CALL_TYPE DLL candle_list_scan(candle_list_handle *list);
+DLL_EXPORT bool CALL_TYPE DLL candle_list_free(candle_list_handle list);
+DLL_EXPORT bool CALL_TYPE DLL candle_list_length(candle_list_handle list, uint8_t *len);
 
-DLL_EXPORT bool __stdcall DLL candle_channel_count(candle_handle hdev, uint8_t *num_channels);
-DLL_EXPORT bool __stdcall DLL candle_channel_get_capabilities(candle_handle hdev, uint8_t ch, candle_capability_t *cap);
-DLL_EXPORT bool __stdcall DLL candle_channel_set_timing(candle_handle hdev, uint8_t ch, candle_bittiming_t *data);
-DLL_EXPORT bool __stdcall DLL candle_channel_set_bitrate(candle_handle hdev, uint8_t ch, uint32_t bitrate);
-DLL_EXPORT bool __stdcall DLL candle_channel_start(candle_handle hdev, uint8_t ch, uint32_t flags);
-DLL_EXPORT bool __stdcall DLL candle_channel_stop(candle_handle hdev, uint8_t ch);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_get(candle_list_handle list, uint8_t dev_num, candle_handle *hdev);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_get_state(candle_handle hdev, candle_devstate_t *state);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_get_path(candle_handle hdev, wchar_t * path);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_open(candle_handle hdev);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_get_timestamp_us(candle_handle hdev, uint32_t *timestamp_us);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_close(candle_handle hdev);
+DLL_EXPORT bool CALL_TYPE DLL candle_dev_free(candle_handle hdev);
 
-DLL_EXPORT bool __stdcall DLL candle_frame_send(candle_handle hdev, uint8_t ch, candle_frame_t *frame);
-DLL_EXPORT bool __stdcall DLL candle_frame_read(candle_handle hdev, candle_frame_t *frame, uint32_t timeout_ms);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_count(candle_handle hdev, uint8_t *num_channels);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_get_capabilities(candle_handle hdev, uint8_t ch, candle_capability_t *cap);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_set_timing(candle_handle hdev, uint8_t ch, candle_bittiming_t *data);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_set_bitrate(candle_handle hdev, uint8_t ch, uint32_t bitrate);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_start(candle_handle hdev, uint8_t ch, uint32_t flags);
+DLL_EXPORT bool CALL_TYPE DLL candle_channel_stop(candle_handle hdev, uint8_t ch);
 
-DLL_EXPORT candle_frametype_t __stdcall DLL candle_frame_type(candle_frame_t *frame);
-DLL_EXPORT uint32_t __stdcall DLL candle_frame_id(candle_frame_t *frame);
-DLL_EXPORT bool __stdcall DLL candle_frame_is_extended_id(candle_frame_t *frame);
-DLL_EXPORT bool __stdcall DLL candle_frame_is_rtr(candle_frame_t *frame);
-DLL_EXPORT uint8_t __stdcall DLL candle_frame_dlc(candle_frame_t *frame);
-DLL_EXPORT uint8_t * __stdcall DLL candle_frame_data(candle_frame_t *frame);
-DLL_EXPORT uint32_t __stdcall DLL candle_frame_timestamp_us(candle_frame_t *frame);
+DLL_EXPORT bool CALL_TYPE DLL candle_frame_send(candle_handle hdev, uint8_t ch, candle_frame_t *frame);
+DLL_EXPORT bool CALL_TYPE DLL candle_frame_read(candle_handle hdev, candle_frame_t *frame, uint32_t timeout_ms);
 
-DLL_EXPORT candle_err_t __stdcall DLL candle_dev_last_error(candle_handle hdev);
+DLL_EXPORT candle_frametype_t CALL_TYPE DLL candle_frame_type(candle_frame_t *frame);
+DLL_EXPORT uint32_t CALL_TYPE DLL candle_frame_id(candle_frame_t *frame);
+DLL_EXPORT bool CALL_TYPE DLL candle_frame_is_extended_id(candle_frame_t *frame);
+DLL_EXPORT bool CALL_TYPE DLL candle_frame_is_rtr(candle_frame_t *frame);
+DLL_EXPORT uint8_t CALL_TYPE DLL candle_frame_dlc(candle_frame_t *frame);
+DLL_EXPORT uint8_t * CALL_TYPE DLL candle_frame_data(candle_frame_t *frame);
+DLL_EXPORT uint32_t CALL_TYPE DLL candle_frame_timestamp_us(candle_frame_t *frame);
+
+DLL_EXPORT candle_err_t CALL_TYPE DLL candle_dev_last_error(candle_handle hdev);
 
 #ifdef __cplusplus
 }

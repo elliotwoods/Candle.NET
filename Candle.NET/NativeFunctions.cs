@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Candle
 {
@@ -20,6 +21,7 @@ namespace Candle
 			CANDLE_FRAMETYPE_TIMESTAMP_OVFL
 		}
 
+		[Flags]
 		public enum candle_id_flags : UInt32
 		{
 			CANDLE_ID_EXTENDED = 0x80000000,
@@ -27,6 +29,7 @@ namespace Candle
 			CANDLE_ID_ERR = 0x20000000
 		}
 
+		[Flags]
 		public enum candle_mode_t
 		{
 			CANDLE_MODE_NORMAL = 0x00,
@@ -112,68 +115,67 @@ namespace Candle
 			public UInt32 brp;
 		}
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_list_scan(out IntPtr list);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_list_free(IntPtr list);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_list_length(IntPtr list, out byte length);
 
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_get(IntPtr list, byte dev_num, out IntPtr device);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_get_state(IntPtr device, out candle_devstate_t deviceState);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
-		[return : MarshalAs(UnmanagedType.LPWStr)]
-		public extern static string candle_dev_get_path(IntPtr device);
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+		public extern static bool candle_dev_get_path(IntPtr device, StringBuilder path);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_open(IntPtr device);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_get_timestamp_us(IntPtr device, out UInt32 timestamp_us);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_close(IntPtr device);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_dev_free(IntPtr device);
 
 
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_count(IntPtr device, out byte num_channels);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_get_capabilities(IntPtr device, byte channel, out candle_capability_t cap);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_set_timing(IntPtr device , byte channel, ref candle_bittiming_t data);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_set_bitrate(IntPtr device, byte channel, UInt32 bitrate);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_start(IntPtr device, byte channel, UInt32 flags);
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_channel_stop(IntPtr device, byte channel);
 
 
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_frame_send(IntPtr device, byte channel, ref candle_frame_t frame);
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static bool candle_frame_read(IntPtr device, out candle_frame_t frame, UInt32 timeout_ms);
 
 
 
-		[DllImport("candle.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("../Candle.dll", CallingConvention = CallingConvention.Cdecl)]
 		public extern static candle_err_t candle_dev_last_error(IntPtr device);
 
 
@@ -182,24 +184,6 @@ namespace Candle
 		{
 			var error = candle_dev_last_error(device);
 			throw (new Exception(error.ToString()));
-		}
-
-		public static candle_bittiming_t getDefaultBitTiming()
-		{
-			NativeFunctions.candle_bittiming_t bitTiming;
-			{
-				bitTiming.brp = 875;
-				bitTiming.phase_seg1 = 12;
-				bitTiming.phase_seg2 = 2;
-				bitTiming.sjw = 1;
-				bitTiming.prop_seg = 1;
-			}
-			return bitTiming;
-		}
-
-		public static UInt32 getDefaultBitRate()
-		{
-			return 500000;
 		}
 	}
 }

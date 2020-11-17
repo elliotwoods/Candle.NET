@@ -13,33 +13,33 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="api">
-      <UniqueIdentifier>{8a2d0e85-4b16-4bee-9d64-95a20b4200b4}</UniqueIdentifier>
+    <Filter Include="Candle">
+      <UniqueIdentifier>{5ccf02b9-cd34-4328-97b4-906a327397cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NativeTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\api\candle.c">
-      <Filter>api</Filter>
+    <ClCompile Include="..\Candle\candle.c">
+      <Filter>Candle</Filter>
     </ClCompile>
-    <ClCompile Include="..\api\candle_ctrl_req.c">
-      <Filter>api</Filter>
+    <ClCompile Include="..\Candle\candle_ctrl_req.c">
+      <Filter>Candle</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\api\candle.h">
-      <Filter>api</Filter>
+    <ClInclude Include="..\Candle\candle.h">
+      <Filter>Candle</Filter>
     </ClInclude>
-    <ClInclude Include="..\api\candle_ctrl_req.h">
-      <Filter>api</Filter>
+    <ClInclude Include="..\Candle\candle_ctrl_req.h">
+      <Filter>Candle</Filter>
     </ClInclude>
-    <ClInclude Include="..\api\candle_defs.h">
-      <Filter>api</Filter>
+    <ClInclude Include="..\Candle\candle_defs.h">
+      <Filter>Candle</Filter>
     </ClInclude>
-    <ClInclude Include="..\api\ch_9.h">
-      <Filter>api</Filter>
+    <ClInclude Include="..\Candle\ch_9.h">
+      <Filter>Candle</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

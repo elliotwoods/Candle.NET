@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MirrorNativeApp": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

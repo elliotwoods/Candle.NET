@@ -6,6 +6,8 @@
 #include <chrono>
 #include "candle.h"
 
+uint32_t deviceID = 1;
+
 template<typename T>
 T& valueAndMove(uint8_t*& data)
 {
@@ -18,7 +20,7 @@ void sendMovementFrame(candle_handle device, uint8_t channel, int32_t position)
 {
 	candle_frame_t frame;
 	{
-		frame.can_id = 22 << 19 | CANDLE_ID_EXTENDED;
+		frame.can_id = (deviceID << 19) | CANDLE_ID_EXTENDED;
 		frame.can_dlc = 7;
 		frame.flags = 0;
 		frame.data[0] = 1;
@@ -47,7 +49,7 @@ void sendFrames(candle_handle device, uint8_t channel)
 {
 	candle_frame_t frame;
 	{
-		frame.can_id = 22 << 19 | CANDLE_ID_EXTENDED;
+		frame.can_id = (deviceID << 19) | CANDLE_ID_EXTENDED;
 		frame.can_dlc = 7;
 		frame.flags = 0;
 		frame.data[0] = 1;
@@ -61,7 +63,7 @@ void sendFrames(candle_handle device, uint8_t channel)
 	}
 
 
-	std::cout << "Sending init : " << std::endl;
+	std::cout << "Sending init frame : " << std::endl;
 	if (!candle_frame_send(device, channel, &frame)) {
 		std::cerr << "Failed to send CAN frame" << std::endl;
 	}
@@ -95,9 +97,8 @@ void sendFrames(candle_handle device, uint8_t channel)
 		}
 
 		id &= (1 << 29) - 1;
-		char buffer[100];
 
-		sprintf_s(buffer, "ID : %d, DLC : %d, Data : %.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X, Time : %d"
+		printf("ID : %d, DLC : %d, Data : %.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X, Time : %d"
 			, id
 			, frame.can_dlc
 			, frame.data[0]
@@ -110,7 +111,8 @@ void sendFrames(candle_handle device, uint8_t channel)
 			, frame.data[7]
 			, frame.timestamp_us / 1000
 		);
-		std::cout << buffer << std::endl;
+
+		std::cout << std::endl;
 	}
 }
 
@@ -134,24 +136,12 @@ void runChannel(candle_handle device, uint8_t channel)
 		std::cout << "\t brp_inc: " << capabilities.brp_inc << std::endl;
 	}
 
-	candle_bittiming_t bitTiming;
-	{
-		bitTiming.brp = 875;
-		bitTiming.phase_seg1 = 12;
-		bitTiming.phase_seg2 = 2;
-		bitTiming.sjw = 1;
-		bitTiming.prop_seg = 1;
-	}
-	if (!candle_channel_set_timing(device, channel, &bitTiming)) {
-		std::cerr << "Failed to set bit timing" << std::endl;
-	}
-
 	if (!candle_channel_set_bitrate(device, channel, 500000)) {
 		std::cerr << "Failed to set bit rate" << std::endl;
 	}
 
 	if (!candle_channel_start(device, channel, 0)) {
-		std::cerr << "Failed to set start channel" << std::endl;
+		std::cerr << "Failed to start channel" << std::endl;
 	}
 
 	sendFrames(device, channel);
@@ -166,6 +156,7 @@ void runDevice(candle_handle device)
 	std::cout << "Opening device" << std::endl;
 	if (!candle_dev_open(device)) {
 		std::cerr << "Failed to open device" << std::endl;
+		return;
 	}
 
 	uint32_t timestamp;
@@ -188,6 +179,7 @@ void runDevice(candle_handle device)
 		runChannel(device, channel);
 	}
 
+	std::cout << "Closing device" << std::endl;
 	if (!candle_dev_close(device)) {
 		std::cerr << "Failed to close device " << std::endl;
 	}
@@ -197,44 +189,48 @@ void runDevice(candle_handle device)
 int main()
 {
 	// Print CAN devices
-	{
-		candle_list_handle deviceList;
-		if (!candle_list_scan(&deviceList)) {
-			std::cerr << "Failed to get CAN devices" << std::endl;
-		}
-
-		uint8_t count;
-		if (!candle_list_length(deviceList, &count)) {
-			std::cerr << "Failed to get list length" << std::endl;
-		}
-		std::cout << "Found " << (int) count << " devices" << std::endl;
-
-		for (uint8_t i = 0; i < count; i++) {
-			candle_handle device;
-			if (!candle_dev_get(deviceList, i, &device)) {
-				std::cerr << "Failed to get device " << (int) i << std::endl;
-				continue;
-			}
-
-			candle_devstate_t deviceState;
-			if (!candle_dev_get_state(device, &deviceState)) {
-				std::cerr << "Failed to get device state" << std::endl;
-			}
-
-			std::cout << "Device state : "
-				<< (deviceState == CANDLE_DEVSTATE_AVAIL
-					? "Available"
-					: "In use")
-				<< std::endl;
-
-			auto path = candle_dev_get_path(device);
-			std::cout << "Device path : " << path << std::endl;
-
-			runDevice(device);
-
-			candle_dev_free(device);
-		}
-
-		candle_list_free(deviceList);
+	candle_list_handle deviceList;
+	if (!candle_list_scan(&deviceList)) {
+		std::cerr << "Failed to get CAN devices" << std::endl;
 	}
+
+	uint8_t count;
+	if (!candle_list_length(deviceList, &count)) {
+		std::cerr << "Failed to get list length" << std::endl;
+	}
+	std::cout << "Found " << (int)count << " devices" << std::endl;
+
+	// Run CAN devices
+	for (uint8_t i = 0; i < count; i++) {
+		candle_handle device;
+		if (!candle_dev_get(deviceList, i, &device)) {
+			std::cerr << "Failed to get device " << (int) i << std::endl;
+			continue;
+		}
+
+		candle_devstate_t deviceState;
+		if (!candle_dev_get_state(device, &deviceState)) {
+			std::cerr << "Failed to get device state" << std::endl;
+		}
+
+		std::cout << "Device state : "
+			<< (deviceState == CANDLE_DEVSTATE_AVAIL
+				? "Available"
+				: "In use")
+			<< std::endl;
+
+		wchar_t* path;
+		if (!candle_dev_get_path(device, &path)) {
+			std::cerr << "Failed to get device path";
+		}
+		else {
+			std::cout << "Device path : " << path << std::endl;
+		}
+
+		runDevice(device);
+
+		candle_dev_free(device);
+	}
+
+	candle_list_free(deviceList);
 }

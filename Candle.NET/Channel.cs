@@ -13,9 +13,6 @@ namespace Candle
 		{
 			this.FDeviceHandle = deviceHandle;
 			this.FChannelIndex = channelIndex;
-
-			this.SetTiming(NativeFunctions.getDefaultBitTiming());
-			this.SetBitrate(NativeFunctions.getDefaultBitRate());
 		}
 
 		public NativeFunctions.candle_capability_t Capabilities

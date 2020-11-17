@@ -73,7 +73,12 @@ namespace Candle
 		{
 			get
 			{
-				return NativeFunctions.candle_dev_get_path(this.FDeviceHandle);
+				var path = new StringBuilder(255);
+				if(!NativeFunctions.candle_dev_get_path(this.FDeviceHandle, path))
+				{
+					throw (new Exception("Failed to get path"));
+				}
+				return path.ToString();
 			}
 		}
 
