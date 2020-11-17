@@ -55,8 +55,10 @@ namespace Candle
 			});
 		}
 
-		public void Start()
+		public void Start(UInt32 bitRate)
 		{
+			this.SetBitrate(bitRate);
+
 			this.FDevice.PerformBlocking(() =>
 			{
 				if (!NativeFunctions.candle_channel_start(this.FDevice.Handle, this.FChannelIndex, 0))
@@ -95,8 +97,8 @@ namespace Candle
 			}
 
 			nativeFrame.data = new byte[8];
-			nativeFrame.can_dlc = (byte) frame.data.Length;
-			Buffer.BlockCopy(frame.data, 0, nativeFrame.data, 0, frame.data.Length);
+			nativeFrame.can_dlc = (byte) frame.Data.Length;
+			Buffer.BlockCopy(frame.Data, 0, nativeFrame.data, 0, frame.Data.Length);
 
 			this.FDevice.Perform(() =>
 			{

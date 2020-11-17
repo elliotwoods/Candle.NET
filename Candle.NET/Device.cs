@@ -149,10 +149,6 @@ namespace Candle
 				NativeFunctions.throwError(this.FDeviceHandle);
 			}
 
-			uint timestamp;
-			NativeFunctions.candle_dev_get_timestamp_us(this.FDeviceHandle, out timestamp);
-			Console.WriteLine(timestamp);
-
 			// Create queues
 			this.FActionQueue = new BlockingCollection<Action>();
 			this.FExceptionQueue = new BlockingCollection<Exception>();
@@ -276,8 +272,8 @@ namespace Candle
 								frame.RTR = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_RTR);
 								frame.Error = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_ERR);
 
-								frame.data = new byte[nativeFrame.can_dlc];
-								Buffer.BlockCopy(nativeFrame.data, 0, frame.data, 0, nativeFrame.can_dlc);
+								frame.Data = new byte[nativeFrame.can_dlc];
+								Buffer.BlockCopy(nativeFrame.data, 0, frame.Data, 0, nativeFrame.can_dlc);
 
 								this.FChannels[nativeFrame.channel].NotifyReceive(frame);
 							}

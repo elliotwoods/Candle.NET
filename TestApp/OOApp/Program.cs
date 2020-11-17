@@ -1,76 +1,47 @@
 ﻿using System;
-using System.IO;
-using System.Runtime.InteropServices;
+using System.Threading;
+using Candle;
 
-namespace Candle
+namespace TestApp
 {
 	class Program
 	{
-		static void RunChannelTest(Channel channel)
-		{
-			var frame = new Frame();
-			frame.Extended = true;
-			frame.ID = 1 << 19;
-			frame.data = new byte[]
-			{
-				1, 1, 0, 1, 0, 0, 0
-			};
-
-			Console.WriteLine("Sending");
-			for(int i=0; i<100; i++)
-			{
-				channel.Send(frame);
-				Console.Write(".");
-			}
-			
-			Console.WriteLine("");
-		}
-
 		static void Main(string[] args)
 		{
 			var devices = Device.ListDevices();
-			Console.WriteLine(String.Format("Found {0} devices", devices.Count));
+
 			foreach (var device in devices)
 			{
-				Console.WriteLine("{0} : {1}", device.Path, device.State);
-
 				device.Open();
-
-				var channels = device.Channels;
-				Console.WriteLine("Channel count: {0}", channels.Count);
-
-				Console.WriteLine("Timestamp: {0}", device.Timestamp);
-
-				foreach (var keyValue in channels)
-				{
-					Console.WriteLine("Channel {0} : ", keyValue.Key);
-
+				foreach(var keyValue in device.Channels) {
 					var channel = keyValue.Value;
+					channel.Start(500000);
 
-					var capabilities = channel.Capabilities;
-					Console.WriteLine("\tCapabilities : ");
-
-					foreach(var field in capabilities.GetType().GetFields())
+					// Send frame
 					{
-						Console.WriteLine("\t\t{0} : {1}", field.Name, field.GetValue(capabilities));
+						var frame = new Frame();
+						frame.ID = 1;
+						frame.Extended = true;
+						frame.Data = new byte[7] { 1, 1, 0, 1, 0, 0, 0 };
+						channel.Send(frame);
 					}
 
-					channel.Start();
+					Thread.Sleep(100);
 
-					RunChannelTest(channel);
-
+					// Receive frames
+					var receivedFrames = channel.Receive();
+					foreach (var frame in receivedFrames)
+					{
+						Console.WriteLine(frame);
+					}
 
 					channel.Stop();
 				}
 
 				var errors = device.ReceiveErrors();
-				if(errors.Count > 0)
+				foreach (var error in errors)
 				{
-					Console.WriteLine("Errors in device : ");
-					foreach(var error in errors)
-					{
-						Console.WriteLine(error);
-					}
+					Console.WriteLine(error);
 				}
 
 				device.Close();
