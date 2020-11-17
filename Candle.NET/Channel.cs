@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,12 +7,13 @@ namespace Candle
 {
 	public class Channel
 	{
-		IntPtr FDeviceHandle;
+		Device FDevice;
 		byte FChannelIndex;
-		
-		public Channel(IntPtr deviceHandle, byte channelIndex)
+		BlockingCollection<Frame> FRxQueue = new BlockingCollection<Frame>();
+
+		public Channel(Device device, byte channelIndex)
 		{
-			this.FDeviceHandle = deviceHandle;
+			this.FDevice = device;
 			this.FChannelIndex = channelIndex;
 		}
 
@@ -19,45 +21,60 @@ namespace Candle
 		{
 			get
 			{
-				NativeFunctions.candle_capability_t capabilities;
-				if (!NativeFunctions.candle_channel_get_capabilities(this.FDeviceHandle, this.FChannelIndex, out capabilities))
+				var capabilities = new NativeFunctions.candle_capability_t();
+				this.FDevice.PerformBlocking(() =>
 				{
-					NativeFunctions.throwError(this.FDeviceHandle);
-				}
+					if (!NativeFunctions.candle_channel_get_capabilities(this.FDevice.Handle, this.FChannelIndex, out capabilities))
+					{
+						NativeFunctions.throwError(this.FDevice.Handle);
+					}
+				});
 				return capabilities;
 			}
 		}
 
 		public void SetTiming(NativeFunctions.candle_bittiming_t value)
 		{
-			if (!NativeFunctions.candle_channel_set_timing(this.FDeviceHandle, this.FChannelIndex, ref value))
+			this.FDevice.PerformBlocking(() =>
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
-			}
+				if (!NativeFunctions.candle_channel_set_timing(this.FDevice.Handle, this.FChannelIndex, ref value))
+				{
+					NativeFunctions.throwError(this.FDevice.Handle);
+				}
+			});
 		}
 
 		public void SetBitrate(UInt32 value)
 		{
-			if (!NativeFunctions.candle_channel_set_bitrate(this.FDeviceHandle, this.FChannelIndex, value))
+			this.FDevice.PerformBlocking(() =>
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
-			}
+				if (!NativeFunctions.candle_channel_set_bitrate(this.FDevice.Handle, this.FChannelIndex, value))
+				{
+					NativeFunctions.throwError(this.FDevice.Handle);
+				}
+			});
 		}
 
 		public void Start()
 		{
-			if (!NativeFunctions.candle_channel_start(this.FDeviceHandle, this.FChannelIndex, 0))
+			this.FDevice.PerformBlocking(() =>
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
-			}
+				if (!NativeFunctions.candle_channel_start(this.FDevice.Handle, this.FChannelIndex, 0))
+				{
+					NativeFunctions.throwError(this.FDevice.Handle);
+				}
+			});
 		}
 
 		public void Stop()
 		{
-			if (!NativeFunctions.candle_channel_stop(this.FDeviceHandle, this.FChannelIndex))
+			this.FDevice.PerformBlocking(() =>
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
-			}
+				if (!NativeFunctions.candle_channel_stop(this.FDevice.Handle, this.FChannelIndex))
+				{
+					NativeFunctions.throwError(this.FDevice.Handle);
+				}
+			});
 		}
 
 		public void Send(Frame frame)
@@ -77,10 +94,33 @@ namespace Candle
 				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_ERR;
 			}
 
-			if (!NativeFunctions.candle_frame_send(this.FDeviceHandle, this.FChannelIndex, ref nativeFrame))
+			nativeFrame.data = new byte[8];
+			nativeFrame.can_dlc = (byte) frame.data.Length;
+			Buffer.BlockCopy(frame.data, 0, nativeFrame.data, 0, frame.data.Length);
+
+			this.FDevice.Perform(() =>
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
+				if (!NativeFunctions.candle_frame_send(this.FDevice.Handle, this.FChannelIndex, ref nativeFrame))
+				{
+					NativeFunctions.throwError(this.FDevice.Handle);
+				}
+			});
+		}
+
+		public void NotifyReceive(Frame frame)
+		{
+			this.FRxQueue.Add(frame);
+		}
+
+		public List<Frame> Receive()
+		{
+			var frames = new List<Frame>();
+			Frame frame;
+			while(this.FRxQueue.TryTake(out frame))
+			{
+				frames.Add(frame);
 			}
+			return frames;
 		}
 	}
 }

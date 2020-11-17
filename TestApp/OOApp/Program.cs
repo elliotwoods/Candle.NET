@@ -41,24 +41,39 @@ namespace Candle
 
 				Console.WriteLine("Timestamp: {0}", device.Timestamp);
 
-				foreach (var channel in channels)
+				foreach (var keyValue in channels)
 				{
+					Console.WriteLine("Channel {0} : ", keyValue.Key);
+
+					var channel = keyValue.Value;
+
 					var capabilities = channel.Capabilities;
-					
-					Console.WriteLine("Capabilities : ");
+					Console.WriteLine("\tCapabilities : ");
 
 					foreach(var field in capabilities.GetType().GetFields())
 					{
-						Console.WriteLine("{0} : {1}", field.Name, field.GetValue(capabilities));
+						Console.WriteLine("\t\t{0} : {1}", field.Name, field.GetValue(capabilities));
 					}
 
 					channel.Start();
 
 					RunChannelTest(channel);
 
+
 					channel.Stop();
 				}
 
+				var errors = device.ReceiveErrors();
+				if(errors.Count > 0)
+				{
+					Console.WriteLine("Errors in device : ");
+					foreach(var error in errors)
+					{
+						Console.WriteLine(error);
+					}
+				}
+
+				device.Close();
 			}
 		}
 	}
