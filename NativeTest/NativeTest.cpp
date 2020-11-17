@@ -37,10 +37,15 @@ void sendMovementFrame(candle_handle device, uint8_t channel, int32_t position)
 	auto data = frame.data;
 	valueAndMove<uint8_t>(data) = 1;
 	valueAndMove<uint16_t>(data) = 12;
-	valueAndMove<uint32_t>(data) = position;
+	valueAndMove<int32_t>(data) = position * 1000;
 
 	if (!candle_frame_send(device, channel, &frame)) {
 		std::cerr << "Failed to send CAN frame" << std::endl;
+	}
+
+	// Note : we can only send 94 messages in a row without performing a receive
+	if (candle_frame_read(device, &frame, 0)) {
+		std::cout << 'R';
 	}
 }
 
@@ -74,15 +79,16 @@ void sendFrames(candle_handle device, uint8_t channel)
 	for (int i = 0; i < 100; i++) {
 		sendMovementFrame(device, channel, i);
 		std::cout << ".";
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	for (int i = 100; i >= 0; i--) {
 		sendMovementFrame(device, channel, i);
 		std::cout << ".";
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	
 	std::cout << "Receiving all : " << std::endl;
+	int count = 0;
 	while(candle_frame_read(device, &frame, 100)) {
 		auto id = frame.can_id;
 
@@ -113,6 +119,10 @@ void sendFrames(candle_handle device, uint8_t channel)
 		);
 
 		std::cout << std::endl;
+
+		if (count++ > 100) {
+			break;
+		}
 	}
 }
 
@@ -219,8 +229,8 @@ int main()
 				: "In use")
 			<< std::endl;
 
-		wchar_t* path;
-		if (!candle_dev_get_path(device, &path)) {
+		wchar_t path[255];
+		if (!candle_dev_get_path(device, path)) {
 			std::cerr << "Failed to get device path";
 		}
 		else {

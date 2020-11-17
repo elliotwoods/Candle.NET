@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using Candle;
@@ -10,6 +11,34 @@ namespace MirrorNativeApp
 	class Program
 	{
 		const int deviceID = 1;
+
+		static void sendMovementFrame(IntPtr device, byte channel, int position)
+		{
+			var frame = new NativeFunctions.candle_frame_t();
+			{
+				frame.can_id = (deviceID << 19) | (UInt32) NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED;
+				frame.can_dlc = 7;
+				frame.flags = 0;
+				frame.data = new byte[8];
+
+				var binaryWriter = new BinaryWriter(new MemoryStream(frame.data));
+			
+				// Write to TargetPosition register (for Muscle Memory test)
+				binaryWriter.Write((byte)1);
+				binaryWriter.Write((UInt16)12);
+				binaryWriter.Write((Int32) position * 1000);
+			}
+
+			if (!NativeFunctions.candle_frame_send(device, channel, ref frame))
+			{
+				Console.Write("Failed to send CAN frame");
+			}
+
+			if(NativeFunctions.candle_frame_read(device, out frame, 0))
+			{
+				Console.Write('R');
+			}
+		}
 
 		static void sendFrames(IntPtr device, byte channel)
 		{
@@ -40,18 +69,19 @@ namespace MirrorNativeApp
 			Console.WriteLine("Sending moves : ");
 			for (int i = 0; i < 100; i++)
 			{
-				//sendMovementFrame(device, channel, i);
+				sendMovementFrame(device, channel, i);
 				Console.Write(".");
-				Thread.Sleep(100);
+				Thread.Sleep(1);
 			}
 			for (int i = 100; i >= 0; i--)
 			{
-				//sendMovementFrame(device, channel, i);
+				sendMovementFrame(device, channel, i);
 				Console.Write(".");
-				Thread.Sleep(100);
+				Thread.Sleep(1);
 			}
 
 			Console.WriteLine("Receiving all : ");
+			int count = 0;
 			while (NativeFunctions.candle_frame_read(device, out frame, 100))
 			{
 				var id = frame.can_id;
@@ -69,7 +99,7 @@ namespace MirrorNativeApp
 					Console.Write("ERR, ");
 				}
 
-				Console.WriteLine("ID : %d, DLC : %d, Data : %.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X,%.2X, Time : %d"
+				Console.WriteLine("ID : {0}, DLC : {1}, Data : {2:X},{3:X},{4:X},{5:X},{6:X},{7:X},{8:X},{9:X}, Time : {9}"
 					, id
 					, frame.can_dlc
 					, frame.data[0]
@@ -82,6 +112,12 @@ namespace MirrorNativeApp
 					, frame.data[7]
 					, frame.timestamp_us / 1000
 				);
+
+				if(count++ > 100)
+				{
+					break;
+				}
+
 			}
 		}
 
@@ -95,7 +131,16 @@ namespace MirrorNativeApp
 			else
 			{
 				Console.WriteLine("Capabilities: ");
-				Console.WriteLine(capabilities.ToString());
+				Console.WriteLine("\t feature: {0}", capabilities.feature);
+				Console.WriteLine("\t fclk_can: {0}", capabilities.fclk_can);
+				Console.WriteLine("\t tseg1_min: {0}", capabilities.tseg1_min);
+				Console.WriteLine("\t tseg1_max: {0}", capabilities.tseg1_max);
+				Console.WriteLine("\t tseg2_min: {0}", capabilities.tseg2_min);
+				Console.WriteLine("\t tseg2_max: {0}", capabilities.tseg2_max);
+				Console.WriteLine("\t sjw_max: {0}", capabilities.sjw_max);
+				Console.WriteLine("\t brp_min: {0}", capabilities.brp_min);
+				Console.WriteLine("\t brp_max: {0}", capabilities.brp_max);
+				Console.WriteLine("\t brp_inc: {0}", capabilities.brp_inc);
 			}
 
 			if (!NativeFunctions.candle_channel_set_bitrate(device, channel, 500000))
@@ -108,7 +153,7 @@ namespace MirrorNativeApp
 				Console.WriteLine("Failed to start channel");
 			}
 
-			//sendFrames(device, channel);
+			sendFrames(device, channel);
 
 			if (!NativeFunctions.candle_channel_stop(device, channel))
 			{
