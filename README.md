@@ -7,7 +7,9 @@
 
 ## Notes for general use
 
-* You will need to copy the relevant `candle.dll` file (release or debug) to your application's target directory.
+* A background thread manages sending and receiving
+* You don't have to worry about regularly receiving. We do that for you
+* Sending and receiving are non-blocking functions
 * We wrap a modified version of the CandleAPIDriver found in the [Cangaroo repo](https://github.com/HubertD/cangaroo/tree/master/src/driver/CandleApiDriver/api). 
 * This is only tested on Windows (10 64bit). And since the underlying driver uses WinUSB, it is unlikely to work on other platforms
 
@@ -51,6 +53,7 @@ namespace TestApp
 						channel.Send(frame);
 					}
 
+					// Wait a bit
 					Thread.Sleep(100);
 
 					// Receive frames
