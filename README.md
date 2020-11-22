@@ -1,5 +1,5 @@
 # Candle.NET
-.NET wrapper for the Candle API for controlling CAN bus gateways/analysers using the candlelight firmware (e.g. CANable, CANtact, etc)
+.NET wrapper for the Candle API for controlling CAN bus gateways/analysers using the [Candlelight firmware](https://github.com/candle-usb/candleLight_fw) (e.g. candleLight, CANable, CANtact, etc)
 
 ## Instructions
 
@@ -10,7 +10,6 @@
 * A background thread manages sending and receiving
 * You don't have to worry about regularly receiving. We do that for you
 * Sending and receiving are non-blocking functions
-* We wrap a modified version of the CandleAPIDriver found in the [Cangaroo repo](https://github.com/HubertD/cangaroo/tree/master/src/driver/CandleApiDriver/api). 
 * This is only tested on Windows (10 64bit). And since the underlying driver uses WinUSB, it is unlikely to work on other platforms
 
 ## Notes if you work directly with `NativeFunctions`
@@ -77,3 +76,8 @@ namespace TestApp
 	}
 }
 ```
+
+# Credits
+
+Candle.NET wraps a modified version of the CandleAPIDriver found in the [Cangaroo repo](https://github.com/HubertD/cangaroo/tree/master/src/driver/CandleApiDriver/api). The modifications are mostly to make things cleaner to wrap using the DLLImport mechanism of C#/.NET.
+
