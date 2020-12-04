@@ -9,7 +9,14 @@ namespace Candle
 	{
 		Device FDevice;
 		byte FChannelIndex;
-		BlockingCollection<Frame> FRxQueue = new BlockingCollection<Frame>();
+		protected BlockingCollection<Frame> FRxQueue = new BlockingCollection<Frame>();
+
+		protected DateTime FCounterLastTime;
+		protected UInt64 FCounterRxBits = 0;
+		protected UInt64 FCounterTxBits = 0;
+
+		int FRxBitsPerSecond = 0;
+		int FTxBitsPerSecond = 0;
 
 		public Channel(Device device, byte channelIndex)
 		{
@@ -17,7 +24,7 @@ namespace Candle
 			this.FChannelIndex = channelIndex;
 		}
 
-		public NativeFunctions.candle_capability_t Capabilities
+		virtual public NativeFunctions.candle_capability_t Capabilities
 		{
 			get
 			{
@@ -33,7 +40,7 @@ namespace Candle
 			}
 		}
 
-		public void SetTiming(NativeFunctions.candle_bittiming_t value)
+		virtual public void SetTiming(NativeFunctions.candle_bittiming_t value)
 		{
 			this.FDevice.PerformBlocking(() =>
 			{
@@ -44,7 +51,7 @@ namespace Candle
 			});
 		}
 
-		public void SetBitrate(int value)
+		virtual public void SetBitrate(int value)
 		{
 			this.FDevice.PerformBlocking(() =>
 			{
@@ -55,7 +62,7 @@ namespace Candle
 			});
 		}
 
-		public void Start(int bitrate)
+		virtual public void Start(int bitrate)
 		{
 			this.SetBitrate(bitrate);
 			this.FDevice.PerformBlocking(() =>
@@ -65,9 +72,34 @@ namespace Candle
 					NativeFunctions.throwError(this.FDevice.Handle);
 				}
 			});
+
+			this.FCounterLastTime = DateTime.Now;
+			this.FCounterRxBits = 0;
+			this.FCounterTxBits = 0;
+		}
+		public void Update()
+		{
+			var now = DateTime.Now;
+			var timeDelta = now - this.FCounterLastTime;
+
+			var timeDeltaMillis = (UInt64)timeDelta.Milliseconds;
+			if (timeDeltaMillis > 0)
+			{
+				this.FRxBitsPerSecond = (int)(this.FCounterRxBits * 1000 / timeDeltaMillis);
+				this.FTxBitsPerSecond = (int)(this.FCounterTxBits * 1000 / timeDeltaMillis);
+			}
+			else
+			{
+				this.FRxBitsPerSecond = 0;
+				this.FTxBitsPerSecond = 0;
+			}
+
+			this.FCounterLastTime = now;
+			this.FCounterRxBits = 0;
+			this.FCounterTxBits = 0;
 		}
 
-		public void Stop()
+		virtual public void Stop()
 		{
 			this.FDevice.PerformBlocking(() =>
 			{
@@ -78,39 +110,16 @@ namespace Candle
 			});
 		}
 
-		public void Send(Frame frame)
+		virtual public void Send(Frame frame, bool blocking = false)
 		{
-			var nativeFrame = new NativeFunctions.candle_frame_t();
-			nativeFrame.can_id = frame.Identifier;
-			if(frame.Extended)
-			{
-				nativeFrame.can_id |= (UInt32) NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED;
-			}
-			if (frame.RTR)
-			{
-				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_RTR;
-			}
-			if (frame.Error)
-			{
-				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_ERR;
-			}
-
-			nativeFrame.data = new byte[8];
-			nativeFrame.can_dlc = (byte) frame.Data.Length;
-			Buffer.BlockCopy(frame.Data, 0, nativeFrame.data, 0, frame.Data.Length);
-
-			this.FDevice.Perform(() =>
-			{
-				if (!NativeFunctions.candle_frame_send(this.FDevice.Handle, this.FChannelIndex, ref nativeFrame))
-				{
-					NativeFunctions.throwError(this.FDevice.Handle);
-				}
-			});
+			this.FDevice.SendOnChannel(frame, this.FChannelIndex, blocking);
+			
 		}
 
 		public void NotifyReceive(Frame frame)
 		{
 			this.FRxQueue.Add(frame);
+			this.IncrementRx(frame.LengthOnBus);
 		}
 
 		public List<Frame> Receive()
@@ -122,6 +131,48 @@ namespace Candle
 				frames.Add(frame);
 			}
 			return frames;
+		}
+
+		public void IncrementTx(int bits)
+		{
+			this.FCounterTxBits += (UInt64)bits;
+		}
+
+		public void IncrementRx(int bits)
+		{
+			this.FCounterRxBits += (UInt64)bits;
+		}
+
+		public int RxBitsPerSecond
+		{
+			get
+			{
+				return this.FRxBitsPerSecond;
+			}
+		}
+
+		public int TxBitsPerSecond
+		{
+			get
+			{
+				return this.FTxBitsPerSecond;
+			}
+		}
+
+		public Device Device
+		{
+			get
+			{
+				return this.FDevice;
+			}
+		}
+
+		public int Index
+		{
+			get
+			{
+				return this.FChannelIndex;
+			}
 		}
 	}
 }

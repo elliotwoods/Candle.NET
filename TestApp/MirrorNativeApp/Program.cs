@@ -10,7 +10,7 @@ namespace MirrorNativeApp
 {
 	class Program
 	{
-		const int deviceID = 1;
+		const int deviceID = 41;
 
 		static void sendMovementFrame(IntPtr device, byte channel, int position)
 		{
@@ -71,13 +71,13 @@ namespace MirrorNativeApp
 			{
 				sendMovementFrame(device, channel, i);
 				Console.Write(".");
-				Thread.Sleep(1);
+				Thread.Sleep(10);
 			}
 			for (int i = 100; i >= 0; i--)
 			{
 				sendMovementFrame(device, channel, i);
 				Console.Write(".");
-				Thread.Sleep(1);
+				Thread.Sleep(10);
 			}
 
 			// Send a registry request

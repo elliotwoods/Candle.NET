@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
@@ -8,6 +9,14 @@ namespace Candle
 {
 	public class Device : IDisposable
 	{
+		static List<Device> FAlternativeDevices = new List<Device>();
+
+		// Register a device from a different manufacturer which follows our interface
+		public static void RegisterAlternativeDevice(Device device)
+		{
+			FAlternativeDevices.Add(device);
+		}
+
 		public static List<Device> ListDevices()
 		{
 			var result = new List<Device>();
@@ -42,35 +51,114 @@ namespace Candle
 				throw (new Exception(String.Format("Failed to free device list")));
 			}
 
+			// Add devices from other manufacturers to the list
+			result.AddRange(Device.FAlternativeDevices);
+
 			return result;
 		}
 
 		IntPtr FDeviceHandle;
-		Dictionary<int, Channel> FChannels = new Dictionary<int, Channel>();
-		BlockingCollection<Action> FActionQueue;
-		BlockingCollection<Exception> FExceptionQueue;
-		Thread FThread = null;
-		bool FIsClosing = false;
+		protected Dictionary<int, Channel> FChannels = new Dictionary<int, Channel>();
 
-		DateTime FCounterLastTime;
-		UInt64 FCounterRxBits = 0;
-		UInt64 FCounterTxBits = 0;
+		protected BlockingCollection<Action> FActionQueue;
+		protected BlockingCollection<Exception> FExceptionQueue;
+		protected Thread FThread = null;
+		protected bool FIsClosing = false;
 
-		int FRxBitsPerSecond = 0;
-		int FTxBitsPerSecond = 0;
+		Object FIsBlockingUntilCompleteLock = new Object();
+		bool FIsBlockingUntilComplete = false;
+
+		static int NextInstanceIndex = 0;
+		int FInstanceIndex;
 
 		public Device(IntPtr deviceHandle)
 		{
 			this.FDeviceHandle = deviceHandle;
+			this.FInstanceIndex = NextInstanceIndex++;
 		}
 
-		public void Dispose()
+		public virtual void Dispose()
 		{
 			this.Close();
 			NativeFunctions.candle_dev_free(this.FDeviceHandle);
 		}
 
-		void CallInRightThread(Action action, bool blocking)
+		public virtual void Open()
+		{
+			this.Close();
+
+			if (!NativeFunctions.candle_dev_open(this.FDeviceHandle))
+			{
+				NativeFunctions.throwError(this.FDeviceHandle);
+			}
+
+			// Create queues
+			this.FActionQueue = new BlockingCollection<Action>();
+			this.FExceptionQueue = new BlockingCollection<Exception>();
+
+			// Flush Rx on device
+			{
+				NativeFunctions.candle_frame_t nativeFrame;
+				while (NativeFunctions.candle_frame_read(this.FDeviceHandle
+					, out nativeFrame
+					, 0)) { }
+			}
+
+			// Start device thread
+			this.FIsClosing = false;
+			this.FThread = new Thread(this.ThreadedUpdate);
+			this.FThread.Name = String.Format("Candle {0}", this.FInstanceIndex);
+			this.FThread.Start();
+
+			// List Channels
+			this.FChannels.Clear();
+			byte channelCount;
+			if (!NativeFunctions.candle_channel_count(this.FDeviceHandle, out channelCount))
+			{
+				NativeFunctions.throwError(this.FDeviceHandle);
+			}
+			for (byte i = 0; i < channelCount; i++)
+			{
+				this.FChannels.Add(i, new Channel(this, i));
+			}
+		}
+
+		public virtual void Close()
+		{
+			if (this.FThread != null)
+			{
+				this.PerformBlocking(() =>
+				{
+					this.FIsClosing = true;
+					if (!NativeFunctions.candle_dev_close(this.FDeviceHandle))
+					{
+						NativeFunctions.throwError(this.FDeviceHandle);
+					}
+				});
+
+				// Close queues
+				this.FActionQueue.CompleteAdding();
+				this.FExceptionQueue.CompleteAdding();
+
+				this.FThread.Join();
+				this.FThread = null;
+
+				this.FActionQueue.Dispose();
+				this.FActionQueue = null;
+				this.FExceptionQueue.Dispose();
+				this.FExceptionQueue = null;
+			}
+		}
+
+		public void Update()
+		{
+			foreach(var channel in this.FChannels)
+			{
+				channel.Value.Update();
+			}
+		}
+
+		public void PerformInRightThread(Action action, bool blocking)
 		{
 			if(!this.IsOpen || Thread.CurrentThread == this.FThread)
 			{
@@ -89,25 +177,15 @@ namespace Candle
 			}
 		}
 
-		public NativeFunctions.candle_devstate_t State
+		public virtual void BlockUntilActionsComplete(TimeSpan timeout)
 		{
-			get
+			this.PerformBlocking(() =>
 			{
-				var value = new NativeFunctions.candle_devstate_t();
-				Action action = () =>
-				{
-					if(!NativeFunctions.candle_dev_get_state(this.FDeviceHandle, out value))
-					{
-						NativeFunctions.throwError(this.FDeviceHandle);
-					}
-				};
-
-				this.CallInRightThread(action, true);
-				return value;
-			}
+				// Wait until this action gets to the head of the queue and is performed
+			});
 		}
 
-		public string Path
+		public virtual string Path
 		{
 			get
 			{
@@ -119,12 +197,12 @@ namespace Candle
 						throw (new Exception("Failed to get path"));
 					}
 				};
-				this.CallInRightThread(action, true);
+				this.PerformInRightThread(action, true);
 				return path.ToString();
 			}
 		}
 
-		public UInt32 Timestamp
+		public virtual UInt32 Timestamp
 		{
 			get
 			{
@@ -136,84 +214,34 @@ namespace Candle
 						NativeFunctions.throwError(this.FDeviceHandle);
 					}
 				};
-				this.CallInRightThread(action, true);
+				this.PerformInRightThread(action, true);
 				return value;
 			}
 		}
 
-		public void Open()
+		public int ActionQueueSize
 		{
-			this.Close();
-
-			if(!NativeFunctions.candle_dev_open(this.FDeviceHandle))
+			get
 			{
-				NativeFunctions.throwError(this.FDeviceHandle);
+				return this.FActionQueue.Count;
 			}
-
-			// Create queues
-			this.FActionQueue = new BlockingCollection<Action>();
-			this.FExceptionQueue = new BlockingCollection<Exception>();
-
-			// Start device thread
-			this.FIsClosing = false;
-			this.FThread = new Thread(this.ThreadedUpdate);
-			this.FThread.Name = "Candle";
-			this.FThread.Start();
-
-			// List Channels
-			this.FChannels.Clear();
-			byte channelCount;
-			if(!NativeFunctions.candle_channel_count(this.FDeviceHandle, out channelCount))
-			{
-				NativeFunctions.throwError(this.FDeviceHandle);
-			}
-			for(byte i=0; i<channelCount; i++)
-			{
-				this.FChannels.Add(i, new Channel(this, i));
-			}
-
-			this.FCounterLastTime = DateTime.Now;
-			this.FCounterRxBits = 0;
-			this.FCounterTxBits = 0;
 		}
 
-		public void Close()
+		public virtual NativeFunctions.candle_devstate_t DeviceState
 		{
-			if(this.FThread != null)
+			get
 			{
-				this.PerformBlocking(() =>
+				var value = new NativeFunctions.candle_devstate_t();
+				Action action = () =>
 				{
-					this.FIsClosing = true;
-					if (!NativeFunctions.candle_dev_close(this.FDeviceHandle))
+					if (!NativeFunctions.candle_dev_get_state(this.FDeviceHandle, out value))
 					{
 						NativeFunctions.throwError(this.FDeviceHandle);
 					}
-				});
-
-				// Close queues
-				this.FActionQueue.CompleteAdding();
-				this.FActionQueue.Dispose();
-				this.FActionQueue = null;
-				this.FExceptionQueue.CompleteAdding();
-				this.FExceptionQueue.Dispose();
-				this.FExceptionQueue = null;
-
-				this.FThread.Join();
-				this.FThread = null;
+				};
+				this.PerformInRightThread(action, true);
+				return value;
 			}
-		}
-
-		public void Update()
-		{
-			var now = DateTime.Now;
-			var timeDelta = now - this.FCounterLastTime;
-
-			this.FRxBitsPerSecond = (int)(this.FCounterRxBits * 1000 / (UInt64)timeDelta.TotalMilliseconds);
-			this.FTxBitsPerSecond = (int)(this.FCounterTxBits * 1000 / (UInt64)timeDelta.TotalMilliseconds);
-
-			this.FCounterLastTime = now;
-			this.FCounterRxBits = 0;
-			this.FCounterTxBits = 0;
 		}
 
 		public bool IsOpen
@@ -281,10 +309,9 @@ namespace Candle
 							, out nativeFrame
 							, 0))
 						{
-							// Find the channel 
-							if (this.FChannels.ContainsKey(nativeFrame.channel)) {
-								var frame = new Frame();
-
+							// Convert to Frame
+							var frame = new Frame();
+							{
 								var flags = (NativeFunctions.candle_id_flags)(nativeFrame.can_id);
 								frame.Identifier = nativeFrame.can_id & ((1 << 29) - 1);
 								frame.Extended = flags.HasFlag(NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED);
@@ -295,7 +322,10 @@ namespace Candle
 								Buffer.BlockCopy(nativeFrame.data, 0, frame.Data, 0, nativeFrame.can_dlc);
 
 								frame.Timestamp = nativeFrame.timestamp_us;
+							}
 
+							// Find the channel 
+							if (this.FChannels.ContainsKey(nativeFrame.channel)) {
 								this.FChannels[nativeFrame.channel].NotifyReceive(frame);
 							}
 							else
@@ -324,9 +354,41 @@ namespace Candle
 				}
 				catch(Exception e)
 				{
-					Console.Write(e);
+					this.FExceptionQueue.Add(e);
 				}
 			}
+		}
+
+		public void SendOnChannel(Frame frame, byte channelIndex, bool blocking = false)
+		{
+			var nativeFrame = new NativeFunctions.candle_frame_t();
+			nativeFrame.can_id = frame.Identifier;
+			if (frame.Extended)
+			{
+				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_EXTENDED;
+			}
+			if (frame.RTR)
+			{
+				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_RTR;
+			}
+			if (frame.Error)
+			{
+				nativeFrame.can_id |= (UInt32)NativeFunctions.candle_id_flags.CANDLE_ID_ERR;
+			}
+
+			nativeFrame.data = new byte[8];
+			nativeFrame.can_dlc = (byte)frame.Data.Length;
+			Buffer.BlockCopy(frame.Data, 0, nativeFrame.data, 0, frame.Data.Length);
+
+			var lengthOnBus = frame.LengthOnBus;
+			this.PerformInRightThread(() =>
+			{
+				if (!NativeFunctions.candle_frame_send(this.FDeviceHandle, channelIndex, ref nativeFrame))
+				{
+					NativeFunctions.throwError(this.FDeviceHandle);
+				}
+				this.Channels[channelIndex].IncrementTx(lengthOnBus);
+			}, blocking);
 		}
 
 		public List<Exception> ReceiveErrors()
@@ -343,27 +405,16 @@ namespace Candle
 			return result;
 		}
 
+		public void NotifyError(Exception e)
+		{
+			this.FExceptionQueue.Add(e);
+		}
+
 		public int TxQueueSize
 		{
 			get
 			{
 				return this.FActionQueue.Count;
-			}
-		}
-
-		public int RxBitsPerSecond
-		{
-			get
-			{
-				return this.FRxBitsPerSecond;
-			}
-		}
-
-		public int TxBitsPerSecond
-		{
-			get
-			{
-				return this.TxBitsPerSecond;
 			}
 		}
 	}
