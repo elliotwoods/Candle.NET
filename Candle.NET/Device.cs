@@ -104,11 +104,10 @@ namespace Candle
 					, 0)) { }
 			}
 
-			// Start device thread
+			// Setup device thread
 			this.FIsClosing = false;
 			this.FThread = new Thread(this.ThreadedUpdate);
 			this.FThread.Name = String.Format("Candle {0}", this.FInstanceIndex);
-			this.FThread.Start();
 
 			// List Channels
 			this.FChannels.Clear();
@@ -121,6 +120,9 @@ namespace Candle
 			{
 				this.FChannels.Add(i, new Channel(this, i));
 			}
+
+			// Start device thread
+			this.FThread.Start();
 		}
 
 		public virtual void Close()
@@ -305,9 +307,15 @@ namespace Candle
 					// Rx frames
 					{
 						NativeFunctions.candle_frame_t nativeFrame;
+
+						// Don't wait on the receive if we have messages to send
+						var waitTime = this.FActionQueue.Count > 0
+							? 0U
+							: 10U;
+
 						if (NativeFunctions.candle_frame_read(this.FDeviceHandle
 							, out nativeFrame
-							, 0))
+							, waitTime))
 						{
 							// Convert to Frame
 							var frame = new Frame();
@@ -346,7 +354,7 @@ namespace Candle
 
 							if(count++ > 64)
 							{
-								// We have trouble when sending more than 92 message in a row
+								// We have trouble when sending more than 92 message in a row between receives
 								break;
 							}
 						}
